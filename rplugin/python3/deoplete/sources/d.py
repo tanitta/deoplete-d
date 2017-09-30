@@ -3,6 +3,7 @@ import os
 import re
 import subprocess
 import sys
+import json
 
 from .base import Base
 
@@ -43,7 +44,10 @@ class Source(Base):
 
         self._dcd_client_binary = self.vim.vars['deoplete#sources#d#dcd_client_binary']
         self._dcd_server_binary = self.vim.vars['deoplete#sources#d#dcd_server_binary']
+
         self.import_dirs = []
+        self.set_std_library_to(self.import_dirs)
+        self.set_dub_dependencies_to(self.import_dirs)
 
         self
 
@@ -76,6 +80,9 @@ class Source(Base):
             if not buf_path in self.import_dirs:
                 args.append("-I{}".format(buf_path))
                 self.import_dirs.append(buf_path)
+
+        for path in self.import_dirs:
+            args.append("-I{}".format(path))
 
         process = subprocess.Popen(args,
                                    stdin=subprocess.PIPE,
@@ -198,3 +205,36 @@ class Source(Base):
                     return binary
         return error(self.vim, cmd + ' binary not found')
 
+    def set_std_library_to(self, import_dirs):
+        import_dirs.append("/usr/local/include/dlang/dmd")
+
+    def set_dub_dependencies_to(self, import_dirs):
+        json_path = os.path.join(os.getcwd(), 'dub.selections.json')
+        if os.path.exists(json_path):
+            dub_selection_json = json.load(open(json_path,'r'))
+
+            versions = dub_selection_json['versions']
+            result = subprocess.run(['dub', 'list'], stdout=subprocess.PIPE).stdout
+            splitted_result = str(result).strip().split('\\n')
+            del splitted_result[0]
+            del splitted_result[len(splitted_result)-1]
+            del splitted_result[len(splitted_result)-1]
+
+            all_packages = [Package(p) for p in splitted_result]
+            for key in versions.keys():
+                pkg = Package("name version path")
+                if isinstance(versions[key], dict) and 'path' in versions[key]:
+                    path = versions[key]['path']
+                    pkg = next(filter(lambda p:(p.name == key or p.path == path), all_packages))
+                else:
+                    pkg = next(filter(lambda p:(p.name == key or p.version == versions[key]), all_packages))
+                import_dirs.append(os.path.join(pkg.path, "source"))
+
+
+
+class Package(object):
+    def __init__(self, s):
+        splitted = s.strip(' ').split(' ')
+        self.name = splitted[0]
+        self.version = splitted[1].strip(':')
+        self.path = splitted[2]
