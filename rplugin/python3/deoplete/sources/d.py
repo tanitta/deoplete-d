@@ -226,13 +226,12 @@ class Source(Base):
 
             all_packages = [Package(p) for p in splitted_result]
             for key in versions.keys():
-                pkg = Package("name version path")
                 if isinstance(versions[key], dict) and 'path' in versions[key]:
-                    path = versions[key]['path']
-                    pkg = next(filter(lambda p:(p.name == key or p.path == path), all_packages))
+                    path = os.path.abspath(versions[key]['path'])
+                    import_dirs.append(os.path.join(path, "source"))
                 else:
                     pkg = next(filter(lambda p:(p.name == key or p.version == versions[key]), all_packages))
-                import_dirs.append(os.path.join(pkg.path, "source"))
+                    import_dirs.append(os.path.join(pkg.path, "source"))
 
 
 
