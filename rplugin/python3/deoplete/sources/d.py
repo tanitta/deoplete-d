@@ -46,8 +46,12 @@ class Source(Base):
         self._dcd_server_binary = self.vim.vars['deoplete#sources#d#dcd_server_binary']
 
         self.import_dirs = []
-        self.set_std_library_to(self.import_dirs)
-        self.set_dub_dependencies_to(self.import_dirs)
+
+        if self.vim.vars['deoplete#sources#d#std_path'] != '':
+            import_dirs.append(self.vim.vars['deoplete#sources#d#std_path'])
+
+        if self.vim.vars['deoplete#sources#d#load_dub'] == 1:
+            self.set_dub_dependencies_to(self.import_dirs)
 
         self
 
