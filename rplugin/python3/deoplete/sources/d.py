@@ -48,7 +48,7 @@ class Source(Base):
         self.import_dirs = []
 
         if self.vim.vars['deoplete#sources#d#std_path'] != '':
-            import_dirs.append(self.vim.vars['deoplete#sources#d#std_path'])
+            self.import_dirs.append(self.vim.vars['deoplete#sources#d#std_path'])
 
         if self.vim.vars['deoplete#sources#d#load_dub'] == 1:
             self.set_dub_dependencies_to(self.import_dirs)
